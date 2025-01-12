@@ -46,70 +46,6 @@ class DockDemo extends StatelessWidget {
 /// A [DockItem] maintains both its current and original positions, making it
 /// suitable for drag-and-drop reordering operations. Each item is uniquely
 /// identified by a [key] generated from its [label].
-class DockItem {
-  /// Creates a dock item with a visual representation and identifier.
-  ///
-  /// The [icon] parameter defines the visual element displayed in the dock.
-  /// The [label] parameter is used to generate a unique [key] for identification
-  /// and must be non-null.
-  DockItem({required this.icon, required this.label}) : key = ValueKey(label);
-
-  /// The visual element displayed for this dock item.
-  final Widget? icon;
-
-  /// A descriptive label that identifies this dock item.
-  ///
-  /// Used to generate the [key] for equality comparison and identification.
-  final String label;
-
-  /// A unique identifier for this dock item, generated from [label].
-
-  final Key key;
-
-  /// The current position of the dock item in the coordinate space.
-  ///
-  /// Defaults to [Offset.zero] and updates during drag operations.
-  Offset _position = Offset.zero;
-
-  /// The initial position where the dock item was first placed.
-  ///
-  /// Used as a reference for resetting position after invalid drag operations.
-  Offset _originalPosition = Offset.zero;
-
-  /// The initial position where the dock item was first placed.
-  ///
-  /// This position serves as a reference point for resetting the item's
-  /// location after cancelled drag operations.
-  Offset get position => _position;
-
-  /// Updates the current position of the dock item.
-  ///
-  /// This is typically called during drag operations to update the item's
-  /// visual position in the dock.
-  set position(Offset value) => _position = value;
-
-  /// The original position of the dock item.
-  ///
-  /// This is the position where the item was initially placed, and is used
-  /// to reset the item's position after drag operations are cancelled.
-  Offset get originalPosition => _originalPosition;
-
-  /// Updates the original position of the dock item.
-  ///
-  /// This should be called when initially positioning the item or after
-  /// a successful reordering operation.
-  set originalPosition(Offset value) => _originalPosition = value;
-
-  @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-
-    return other is DockItem && other.key == key;
-  }
-
-  @override
-  int get hashCode => key.hashCode;
-}
 
 /// Dock of reorderable [items].
 class Dock extends StatefulWidget {
@@ -163,6 +99,42 @@ class _DockState extends State<Dock> {
 
   /// The width of the [Dock].
   late double dockWidth;
+
+  @override
+  void initState() {
+    super.initState();
+
+    /// Initialize the [hoveredIndex].
+    hoveredIndex = null;
+
+    /// Initialize the [baseItemHeight].
+    baseItemHeight = 50;
+
+    /// Initialize the base translation along the y-axis.
+    baseTranslationYaxis = 0.0;
+
+    /// Initialize the padding between the [items].
+    verticleItemsPadding = 10;
+
+    /// Calculate starting positions centered on screen after the [Widget] is built.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final screenWidth = MediaQuery.of(context).size.width;
+      final screenHeight = MediaQuery.of(context).size.height;
+      final itemSpacing = 10;
+
+      final totalWidth = items.length * (baseItemHeight + itemSpacing);
+      final startX = ((screenWidth - totalWidth) / 2) + 4;
+      final centerY = (screenHeight / 2) - 42;
+
+      /// initialize [DockItem] positions in a horizontal row inside the [Dock]
+      for (int i = 0; i < items.length; i++) {
+        items[i].position =
+            Offset(startX + (i * (baseItemHeight + itemSpacing)), centerY);
+        items[i].originalPosition = items[i].position;
+      }
+      setState(() {});
+    });
+  }
 
   ///  Calculates the scaled size and translation along the y-axis of the [DockItem] at the given [index].
   double _getPropertyValue({
@@ -314,42 +286,6 @@ class _DockState extends State<Dock> {
     );
   }
 
-  @override
-  void initState() {
-    super.initState();
-
-    /// Initialize the [hoveredIndex].
-    hoveredIndex = null;
-
-    /// Initialize the [baseItemHeight].
-    baseItemHeight = 50;
-
-    /// Initialize the base translation along the y-axis.
-    baseTranslationYaxis = 0.0;
-
-    /// Initialize the padding between the [items].
-    verticleItemsPadding = 10;
-
-    /// Calculate starting positions centered on screen after the [Widget] is built.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final screenWidth = MediaQuery.of(context).size.width;
-      final screenHeight = MediaQuery.of(context).size.height;
-      final itemSpacing = 10;
-
-      final totalWidth = items.length * (baseItemHeight + itemSpacing);
-      final startX = ((screenWidth - totalWidth) / 2) + 4;
-      final centerY = (screenHeight / 2) - 42;
-
-      /// initialize [DockItem] positions in a horizontal row inside the [Dock]
-      for (int i = 0; i < items.length; i++) {
-        items[i].position =
-            Offset(startX + (i * (baseItemHeight + itemSpacing)), centerY);
-        items[i].originalPosition = items[i].position;
-      }
-      setState(() {});
-    });
-  }
-
   /// Check if the item is inside the dock using the [_dockKey].
   bool isItemInsideDock(Offset globalPosition) {
     final dockBox = _dockKey.currentContext!.findRenderObject() as RenderBox;
@@ -499,4 +435,69 @@ class _DockState extends State<Dock> {
       return totalWidth + scaledSize + 10;
     });
   }
+}
+
+class DockItem {
+  /// Creates a dock item with a visual representation and identifier.
+  ///
+  /// The [icon] parameter defines the visual element displayed in the dock.
+  /// The [label] parameter is used to generate a unique [key] for identification
+  /// and must be non-null.
+  DockItem({required this.icon, required this.label}) : key = ValueKey(label);
+
+  /// The visual element displayed for this dock item.
+  final Widget? icon;
+
+  /// A descriptive label that identifies this dock item.
+  ///
+  /// Used to generate the [key] for equality comparison and identification.
+  final String label;
+
+  /// A unique identifier for this dock item, generated from [label].
+
+  final Key key;
+
+  /// The current position of the dock item in the coordinate space.
+  ///
+  /// Defaults to [Offset.zero] and updates during drag operations.
+  Offset _position = Offset.zero;
+
+  /// The initial position where the dock item was first placed.
+  ///
+  /// Used as a reference for resetting position after invalid drag operations.
+  Offset _originalPosition = Offset.zero;
+
+  /// The initial position where the dock item was first placed.
+  ///
+  /// This position serves as a reference point for resetting the item's
+  /// location after cancelled drag operations.
+  Offset get position => _position;
+
+  /// Updates the current position of the dock item.
+  ///
+  /// This is typically called during drag operations to update the item's
+  /// visual position in the dock.
+  set position(Offset value) => _position = value;
+
+  /// The original position of the dock item.
+  ///
+  /// This is the position where the item was initially placed, and is used
+  /// to reset the item's position after drag operations are cancelled.
+  Offset get originalPosition => _originalPosition;
+
+  /// Updates the original position of the dock item.
+  ///
+  /// This should be called when initially positioning the item or after
+  /// a successful reordering operation.
+  set originalPosition(Offset value) => _originalPosition = value;
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+
+    return other is DockItem && other.key == key;
+  }
+
+  @override
+  int get hashCode => key.hashCode;
 }
